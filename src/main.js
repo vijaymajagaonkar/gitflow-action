@@ -45,6 +45,7 @@ async function run() {
         core.debug(JSON.stringify(context.payload));
         switch (github.context.eventName) {
             case "push":
+            case "workflow_run":
                 await push();
                 break;
 
