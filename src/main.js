@@ -31,11 +31,13 @@ function getTarget(head) {
 }
 
 function isAutoMergeEvent(eventName) {
+    core.info(`isAutoMergeEvent event: ${eventName}, auto_merge ${auto_merge}`);
     if (auto_merge == "true") {
         return true;
     }
     else {
         const auto_merge_events = auto_merge.split(",").map(e => e.trim());
+        core.info(`auto_merge_events ${auto_merge_events}`);
         return auto_merge_events.includes(eventName);
     }
 }
@@ -46,6 +48,7 @@ async function run() {
         switch (github.context.eventName) {
             case "push":
             case "workflow_run":
+                core.info("About to call push");
                 await push();
                 break;
 
@@ -72,10 +75,10 @@ async function run() {
                     }
                     for (const element of prs) {
                         const pullResponse = await client.pulls.get({
-                            owner,
-                            pull_number: element.number,
-                            repo,
-                        }),
+                                owner,
+                                pull_number: element.number,
+                                repo,
+                            }),
                             data = pullResponse.data;
                         core.debug(JSON.stringify(data));
                         if (data.labels.map(labelMap).includes(label)) {
@@ -104,6 +107,7 @@ function labelMap(label) {
 }
 
 async function push() {
+    core.info("Inside push");
     const head = context.ref.substr(11),
         base = getTarget(head);
     if (!base) {
@@ -117,9 +121,10 @@ async function push() {
         repo,
         state: "open",
     });
-    core.debug(JSON.stringify(pulls.data));
+    core.info(JSON.stringify(pulls.data));
     let pull_number;
     if (pulls.data.length == 1) {
+        core.info("Inside if block pulls.data");
         const data = pulls.data[0];
         pull_number = data.number;
         core.info(`Pull request already exists: #${pull_number}.`);
@@ -131,12 +136,12 @@ async function push() {
     }
     else {
         const creationResponse = await client.pulls.create({
-            base,
-            head,
-            owner,
-            repo,
-            title: `${head} -> ${base}`,
-        }),
+                base,
+                head,
+                owner,
+                repo,
+                title: `${head} -> ${base}`,
+            }),
             creationData = creationResponse.data;
         pull_number = creationData.number;
         core.info(`Pull request #${pull_number} created.`);
@@ -150,7 +155,9 @@ async function push() {
         core.info(`Label ${label} added to #${pull_number}.`);
         core.debug(JSON.stringify(labelsResponse.data));
     }
+    core.info("Auto merge event");
     if (isAutoMergeEvent("push")) {
+        core.info("merging pull number");
         await merge(pull_number);
     }
     else {
