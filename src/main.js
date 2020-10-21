@@ -107,7 +107,7 @@ function labelMap(label) {
 }
 
 async function push() {
-    core.info("Inside push");
+    core.info(`Inside push`);
     const head = context.ref.substr(11),
         base = getTarget(head);
     if (!base) {
@@ -124,7 +124,7 @@ async function push() {
     core.info(JSON.stringify(pulls.data));
     let pull_number;
     if (pulls.data.length == 1) {
-        core.info("Inside if block pulls.data");
+        core.info(`Inside if block pulls.data`);
         const data = pulls.data[0];
         pull_number = data.number;
         core.info(`Pull request already exists: #${pull_number}.`);
@@ -155,9 +155,9 @@ async function push() {
         core.info(`Label ${label} added to #${pull_number}.`);
         core.debug(JSON.stringify(labelsResponse.data));
     }
-    core.info("Auto merge event");
+    core.info(`Auto merge event`);
     if (isAutoMergeEvent("push")) {
-        core.info("merging pull number");
+        core.info(`merging pull number`);
         await merge(pull_number);
     }
     else {
