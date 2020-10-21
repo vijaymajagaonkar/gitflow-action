@@ -444,21 +444,8 @@ module.exports =
                     switch (github.context.eventName) {
                         case "push":
                         case "workflow_run":
-                            await push();
+                            await push(github.context.eventName);
                             break;
-                        // case "workflow_run":
-                        //     if (isAutoMergeEvent("workflow_run")) {
-                        //         if (context.payload.pull_request.labels.map(labelMap).includes(label)) {
-                        //             await merge(context.payload.pull_request.number);
-                        //         }
-                        //         else {
-                        //             core.info(`Pull request does not have the label ${label}. Skipping...`);
-                        //         }
-                        //     }
-                        //     else {
-                        //         core.info("cannot auto merge");
-                        //     }
-                        //     break;
                         case "pull_request_review":
                             if (isAutoMergeEvent("pull_request_review")) {
                                 if (context.payload.pull_request.labels.map(labelMap).includes(label)) {
@@ -513,7 +500,7 @@ module.exports =
                 return label.name;
             }
 
-            async function push() {
+            async function push(event) {
                 const head = context.ref.substr(11),
                     base = getTarget(head);
                 if (!base) {
@@ -542,8 +529,8 @@ module.exports =
                     }
                 }
                 else {
-
                     core.info('Pull request data: ' + JSON.stringify({
+                        event: event,
                         base : base,
                         head : head,
                         owner : owner,
@@ -551,14 +538,27 @@ module.exports =
                         title: `${head} -> ${base}`,
                     }));
 
-                    const creationResponse = await client.pulls.create({
+                    let creationResponse = {};
+                    if(event === "push") {
+                        creationResponse = await client.pulls.create({
                             base,
                             head,
                             owner,
                             repo,
                             title: `${head} -> ${base}`,
-                        }),
-                        creationData = creationResponse.data;
+                        });
+                    } else {
+                        //for now assume workflow
+                        creationResponse = await client.pulls.create({
+                            "base":"master",
+                            "head":"release/b",
+                            "owner":"vijaymajagaonkar",
+                            "repo":"stock",
+                            "title":"release/a -> release/b",
+                        });
+                    }
+
+                    const creationData = creationResponse.data;
                     pull_number = creationData.number;
                     core.info(`Pull request #${pull_number} created.`);
                     core.debug(JSON.stringify(creationData));
