@@ -542,6 +542,15 @@ module.exports =
                     }
                 }
                 else {
+
+                    core.info('Pull request data: ' + JSON.stringify({
+                        base : base,
+                        head : head,
+                        owner : owner,
+                        repo : repo,
+                        title: `${head} -> ${base}`,
+                    }));
+
                     const creationResponse = await client.pulls.create({
                             base,
                             head,
