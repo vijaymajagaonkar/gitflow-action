@@ -428,7 +428,7 @@ module.exports =
             }
 
             function isAutoMergeEvent(eventName) {
-                if (auto_merge == "true") {
+                if (auto_merge === "true") {
                     return true;
                 }
                 else {
@@ -438,14 +438,26 @@ module.exports =
             }
 
             async function run() {
+                core.info("inside run");
                 try {
-                    core.info(JSON.stringify(context.payload));
+                    core.debug(JSON.stringify(context.payload));
                     switch (github.context.eventName) {
                         case "push":
-                        case "workflow_run":
                             await push();
                             break;
-
+                        case "workflow_run":
+                            if (isAutoMergeEvent("workflow_run")) {
+                                if (context.payload.pull_request.labels.map(labelMap).includes(label)) {
+                                    await merge(context.payload.pull_request.number);
+                                }
+                                else {
+                                    core.info(`Pull request does not have the label ${label}. Skipping...`);
+                                }
+                            }
+                            else {
+                                core.info("cannot auto merge");
+                            }
+                            break;
                         case "pull_request_review":
                             if (isAutoMergeEvent("pull_request_review")) {
                                 if (context.payload.pull_request.labels.map(labelMap).includes(label)) {
@@ -514,13 +526,14 @@ module.exports =
                     repo,
                     state: "open",
                 });
-                core.info(JSON.stringify(pulls.data));
+                core.info('Pull data: ' + JSON.stringify(pulls.data));
                 let pull_number;
-                if (pulls.data.length == 1) {
+                if (pulls.data.length === 1) {
                     const data = pulls.data[0];
                     pull_number = data.number;
                     core.info(`Pull request already exists: #${pull_number}.`);
                     const labels = data.labels.map(labelMap);
+                    core.info(`Labels: ${labels}`);
                     if (!labels.includes(label)) {
                         core.info(`Pull request does not have the label ${label}. Skipping...`);
                         return;
