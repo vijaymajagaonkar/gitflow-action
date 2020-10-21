@@ -529,17 +529,18 @@ module.exports =
                     }
                 }
                 else {
-                    core.info('Pull request data: ' + JSON.stringify({
-                        event: event,
-                        base : base,
-                        head : head,
-                        owner : owner,
-                        repo : repo,
-                        title: `${head} -> ${base}`,
-                    }));
-
                     let creationResponse = {};
                     if(event === "push") {
+
+                        core.info('Pull request data: ' + JSON.stringify({
+                            event: event,
+                            base : base,
+                            head : head,
+                            owner : owner,
+                            repo : repo,
+                            title: `${head} -> ${base}`,
+                        }));
+                        
                         creationResponse = await client.pulls.create({
                             base,
                             head,
@@ -549,12 +550,20 @@ module.exports =
                         });
                     } else {
                         //for now assume workflow
+                        core.info('Pull request data: ' + JSON.stringify({
+                            "base": `${masterBranch}`,
+                            "head": `${releaseBranch}`,
+                            owner,
+                            repo,
+                            title:"release/a -> release/b",
+                        }));
+                        
                         creationResponse = await client.pulls.create({
-                            "base":"master",
-                            "head":"release/b",
-                            "owner":"vijaymajagaonkar",
-                            "repo":"stock",
-                            "title":"release/a -> release/b",
+                            "base": `${masterBranch}`,
+                            "head": `${releaseBranch}`,
+                            owner,
+                            repo,
+                            title:"release/a -> release/b",
                         });
                     }
 
